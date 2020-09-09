@@ -1,0 +1,5 @@
+.vscode
+datasets
+out
+train/checkpoints/FeatherNet54/
+embeddings/embeddings
