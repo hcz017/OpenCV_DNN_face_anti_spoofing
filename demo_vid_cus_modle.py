@@ -6,6 +6,17 @@ import cv2
 import pyrealsense2 as rs
 import os
 import time
+import matplotlib.pyplot as plt
+
+
+def plt_show_img(title, image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    plt.figure("Image")
+    plt.title(title)
+    plt.imshow(image)
+    plt.pause(0.01)
+    plt.clf()
+
 
 # 定义命令行参数列表
 ap = argparse.ArgumentParser()
@@ -35,43 +46,74 @@ embedder.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE);
 # embedder.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL);
 # 加载活体检测器
 print("[INFO] loading liveness detector...")
-model = cv2.dnn.readNet(args["model"] + ".bin", args["model"] + ".xml")
-model.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE);
+# model = cv2.dnn.readNet(args["model"]+".bin", args["model"]+".xml")
+# model.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE);
+
+binPath = os.path.sep.join(["./train/checkpoints/FeatherNet54/", "best.pth.onnx"])
+model = cv2.dnn.readNetFromONNX(binPath)
+model.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE)
+
 # model.setPreferableTarget(cv2.dnn.DNN_TARGET_MYRIAD);
 # model.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL);
 # 加载人脸身份信息数据库
 data = pickle.loads(open(args["embeddings"], "rb").read())
 # 初始化SR300并预热
-print("[INFO] Initialize Intel  Realsense camera...")
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-colorizer = rs.colorizer()
-colorizer.set_option(rs.option.histogram_equalization_enabled, 1)
-colorizer.set_option(rs.option.color_scheme, 2)  # white to black
-profile = pipeline.start(config)
-time.sleep(2.0)
-depth_sensor = profile.get_device().first_depth_sensor()
-depth_scale = depth_sensor.get_depth_scale()
-clipping_distance_in_meters = 1  # 1 meter
-clipping_distance = clipping_distance_in_meters / depth_scale
-align_to = rs.stream.color
-align = rs.align(align_to)
+# print("[INFO] Initialize Intel  Realsense camera...")
+# pipeline = rs.pipeline()
+# config = rs.config()
+# config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+# config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+# colorizer = rs.colorizer()
+# colorizer.set_option(rs.option.histogram_equalization_enabled, 1)
+# colorizer.set_option(rs.option.color_scheme, 2) # white to black
+# profile = pipeline.start(config)
+# time.sleep(2.0)
+# depth_sensor = profile.get_device().first_depth_sensor()
+# depth_scale = depth_sensor.get_depth_scale()
+# clipping_distance_in_meters = 1 #1 meter
+# clipping_distance = clipping_distance_in_meters / depth_scale
+# align_to = rs.stream.color
+# align = rs.align(align_to)
 # 循环处理视频流
-while True:
-    # 从Camera获取图像
-    frames = pipeline.wait_for_frames()
-    aligned_frames = align.process(frames)
-    aligned_depth_frame = aligned_frames.get_depth_frame()
-    color_frame = aligned_frames.get_color_frame()
-    if not aligned_depth_frame or not color_frame:
-        continue
+# read frames from view
+videoCapture = cv2.VideoCapture()
+videoCapture.open('./video/hcz_vid.mp4')
 
-    # 将彩色RGB图像转为array
-    color_image = np.asanyarray(color_frame.get_data())
-    # 将对齐后的深度彩色图转为深度灰度图（8-bit）
-    depth_colormap = np.asanyarray(colorizer.colorize(aligned_depth_frame).get_data())
+fps = videoCapture.get(cv2.CAP_PROP_FPS)
+frames = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
+# fps是帧率，意思是每一秒刷新图片的数量，frames是一整段视频中总的图片数量。
+print("fps=", fps, "frames=", frames)
+
+for frame_idx in range(int(frames)):
+    ret, color_frame = videoCapture.read()
+    color_frame = cv2.resize(color_frame, (960, 540))
+    # color_frame = cv2.imread("./out/hcz_vid_frame_0.jpg")
+    # color_frame = cv2.cvtColor(color_frame, cv2.COLOR_BGR2RGB)
+    color_image = np.asanyarray(color_frame)
+    depth_colormap = np.asanyarray(color_frame)
+    # color image is the same as color frame
+    # cv2.imwrite("./out/color_image_%d.jpg"%frame_idx, color_image)
+    # print("color_frame shap", color_frame.shape)
+
+    # depth_frame = cv2.cvtColor(color_frame, cv2.COLOR_BGR2GRAY)
+    # print("depth_frame shap", depth_frame.shape)
+    # cv2.imwrite("./out/frm_%d_depth_frame.jpg"%frame_idx, depth_frame)
+    # depth_colormap = np.asanyarray(depth_frame)
+    # color_frame = np.rot90(color_frame, 3)
+    # cv2.imwrite("./out/frm_%d_color_frame.jpg"%frame_idx, color_frame)
+    # while True:
+    # 从Camera获取图像
+    # frames = pipeline.wait_for_frames()
+    # aligned_frames = align.process(frames)
+    # aligned_depth_frame = aligned_frames.get_depth_frame()
+    # color_frame = aligned_frames.get_color_frame()
+    # if not aligned_depth_frame or not color_frame:
+    #      continue
+
+    # # 将彩色rgb图像转为array
+    # color_image = np.asanyarray(color_frame.get_data())
+    # # 将对齐后的深度彩色图转为深度灰度图（8-bit）
+    # depth_colormap = np.asanyarray(colorizer.colorize(aligned_depth_frame).get_data())
     # 获取帧维度并将其转换成blob
     (h, w) = color_image.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(color_image, (300, 300)), 1.0,
@@ -99,6 +141,9 @@ while True:
             endY = min(h, endY)
             # 提取人脸RGB ROI并进行预处理
             rgb_face = color_image[startY:endY, startX:endX]
+            print("frame %d rgb face" % frame_idx)
+            cv2.imwrite("./out/frm_%d_rgb_face.jpg" % frame_idx, rgb_face)
+            display_image = cv2.rectangle(display_image, (startX, startY), (endX, endY), (255, 0, 0), 2)
             rgb_faceBlob = cv2.resize(rgb_face, (128, 128))
             rgb_faceBlob = rgb_faceBlob.transpose(2, 0, 1)
             rgb_faceBlob = np.expand_dims(rgb_faceBlob, axis=0)
@@ -145,12 +190,21 @@ while True:
                 cv2.rectangle(display_image, (startX, startY), (endX, endY),
                               (0, 0, 255), 2)
 
-    # 将带标签的图像显示在窗口中
-    cv2.imshow("result", display_image)
+    # # 将带标签的图像显示在窗口中
+    # cv2.imshow("result", display_image)
+    plt_show_img("result", display_image)
+    cv2.imwrite("./out/frm_%d_display_image_final.jpg" % frame_idx, display_image)
 
-    # 按“q”退出程序
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord("q"):
-        break
+    # # 按“q”退出程序
+    # key = cv2.waitKey(1) & 0xFF
+    # if key == ord("q"):
+    #     break
 # 清空内存
-cv2.destroyAllWindows()
+# cv2.destroyAllWindows()
+
+
+# $ python demo_n1.py -m models/fas/feathernetB -d models/fd -em models/fr/face-reidentification-retail-0095 -e embeddings/embeddings
+# [INFO] loading face detector...
+# [INFO] loading face recognizer...
+# [INFO] loading liveness detector...
+# [INFO] Initialize Intel Realsense camera...
