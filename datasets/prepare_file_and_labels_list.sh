@@ -1,4 +1,7 @@
 #!/bin/bash
+rm -rf real_*
+rm -rf fake_*
+
 echo "prepare list"
 
 ls ../datasets/fake/* | cut -d "/" -f 2- > fake_all_list.txt
