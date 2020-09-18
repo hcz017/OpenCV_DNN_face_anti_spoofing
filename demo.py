@@ -125,7 +125,7 @@ while True:
             # 提取人脸RGB ROI并进行预处理
             depth_face = depth_colormap[startY:endY, startX:endX]
             depth_face = cv2.cvtColor(depth_face, cv2.COLOR_BGR2RGB);
-            depth_faceBlob = cv2.dnn.blobFromImage(cv2.resize(depth_colormap, (224, 224)), 1.0 / 255)
+            depth_faceBlob = cv2.dnn.blobFromImage(cv2.resize(depth_face, (224, 224)), 1.0 / 255)
 
             # 将blob输入到活体检测器中获取检测结果
             model.setInput(depth_faceBlob)
