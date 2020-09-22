@@ -81,8 +81,9 @@ while True:
             endX = min(w, endX)
             endY = min(h, endY)
             # 提取人脸ROI并进行预处理
-            # cv2.rectangle(color_image, (startX, startY), (endX, endY),
-            #         (0, 255, 0), 2)
+            cv2.rectangle(color_image, (startX, startY), (endX, endY),
+                    (0, 255, 0), 2)
+            cv2.imshow("color_image", color_image)
             face = depth_colormap[startY:endY, startX:endX]
             if args["flag"] == "real":
                 # 将图像存入磁盘（real face）
@@ -92,7 +93,9 @@ while True:
                 # 将图像存入磁盘（fake face）
                 p = os.path.sep.join([args["output"],
                   "fake_face_{}.jpg".format(saved)])
-            
+
+            cv2.imshow(args["flag"], face)
+            cv2.waitKey(1000)
             cv2.imwrite(p, face)
             saved += 1
             print("[INFO] saved {} to disk".format(p))
