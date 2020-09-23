@@ -153,13 +153,13 @@ def main():
         best_prec1 = max(prec1, best_prec1)
         if not os.path.exists(args.save_path):
             os.mkdir(args.save_path)
+        if is_best:
+            save_model_dir = '{}/{}_{}_{}_best.pth'.format(args.save_path, time_stp, args.model_name, epoch)
+            torch.save(model, save_model_dir)
 
-        save_model_dir = '{}/{}_{}_{}_best.pth'.format(args.save_path, time_stp, args.model_name, epoch) if is_best else'{}/{}_{}_{}.pth'.format(args.save_path, time_stp, args.model_name, epoch)
-        torch.save(model, save_model_dir)
-
-        # save_onnx_dir = '{}/{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch) if is_best else'{}/{}_{}_{}.onnx'.format(args.save_path, time_stp, args.model_name, epoch)
-        # dummy_input = torch.randn(1, 3, 224, 224)
-        # torch.onnx.export(model, dummy_input, save_onnx_dir, verbose=True)
+            save_onnx_dir = '{}/{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch)
+            dummy_input = torch.randn(1, 3, 224, 224)
+            torch.onnx.export(model, dummy_input, save_onnx_dir, verbose=True)
 
         save_name = '{}/{}_{}_{}_best.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch) if is_best else'{}/{}_{}_{}.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch)
         save_checkpoint({
