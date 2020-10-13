@@ -158,8 +158,10 @@ def main():
             torch.save(model, save_model_dir)
 
             save_onnx_dir = '{}/{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch)
-            dummy_input = torch.randn(1, 3, 224, 224)
-            torch.onnx.export(model, dummy_input, save_onnx_dir, verbose=True)
+            # batch_size = 1
+            # input_shape = (3, 224, 224)
+            # input_data_shape = torch.randn(batch_size, *input_shape)
+            # torch.onnx.export(model, input_data_shape, save_onnx_dir, verbose=True)
 
         save_name = '{}/{}_{}_{}_best.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch) if is_best else'{}/{}_{}_{}.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch)
         save_checkpoint({
