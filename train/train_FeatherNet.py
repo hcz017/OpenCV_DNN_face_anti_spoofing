@@ -24,38 +24,38 @@ model_names = sorted(name for name in models.__dict__
                   and callable(models.__dict__[name]))
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet18',
-                	choices=model_names,
-                	help='models architecture: ' +
-                     	' | '.join(model_names) +
-                     	' (default: resnet18)')
+                    choices=model_names,
+                    help='models architecture: ' +
+                         ' | '.join(model_names) +
+                         ' (default: resnet18)')
 parser.add_argument('--config', default='train/cfgs/FeatherNet.yaml')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
-                	help='number of data loading workers (default: 4)')
+                    help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
-                	help='number of total epochs to run')
+                    help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
-                	help='manual epoch number (useful on restarts)')
+                    help='manual epoch number (useful on restarts)')
 parser.add_argument("--random-seed", type=int, default=14,
-                    	help='Seed to provide (near-)reproducibility.')
+                        help='Seed to provide (near-)reproducibility.')
 parser.add_argument('--gpus', type=str, default='0', help='use gpus training eg.--gups 0,1')
-parser.add_argument('-b', '--batch-size', default=16, type=int,
-                	metavar='N', help='mini-batch size (default: 256)')
+parser.add_argument('-b', '--batch-size', default=32, type=int,
+                    metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
-                	metavar='LR', help='initial learning rate')
+                    metavar='LR', help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                	help='momentum')
+                    help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
-                	metavar='W', help='weight decay (default: 1e-4)')
+                    metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', '-p', default=10, type=int,
-                	metavar='N', help='print frequency (default: 10)')
+                    metavar='N', help='print frequency (default: 10)')
 parser.add_argument('--val', '--evaluate', dest='evaluate', default=False, type=bool,
-                	help='evaluate models on validation set')
+                    help='evaluate models on validation set')
 parser.add_argument('--normalization', default=False, type=bool,
-                	help='whether to normalize train data')
+                    help='whether to normalize train data')
 parser.add_argument('--phase-test', default=False, type=bool,
                     help='whether testing in test dataset ')
 parser.add_argument('--center-crop', default=False, type=bool,
-                	help='whether to do center crop')
+                    help='whether to do center crop')
 parser.add_argument('--input_size', default=224, type=int, help='img crop size')
 parser.add_argument('--image_size', default=224, type=int, help='ori img size')
 parser.add_argument('--model_name', default='', type=str, help='name of the models')
@@ -64,8 +64,8 @@ parser.add_argument('--fl-gamma', default=3, type=int, help='gamma for Focal Los
 
 best_prec1 = 0
 model_names = sorted(name for name in models.__dict__
-                 	if name.islower() and not name.startswith("__")
-                 	and callable(models.__dict__[name]))
+                     if name.islower() and not name.startswith("__")
+                     and callable(models.__dict__[name]))
 
 USE_GPU = torch.cuda.is_available()
 
@@ -89,8 +89,8 @@ def main():
         model = models.__dict__[args.arch](**config['model'])
     else:
         model = models.__dict__[args.arch]()
-        device = torch.device('cuda:' + str(args.gpus[0]) if torch.cuda.is_available() else "cpu")
-        str_input_size = '1x3x224x224'
+    device = torch.device('cuda:' + str(args.gpus[0]) if torch.cuda.is_available() else "cpu")
+    str_input_size = '1x3x224x224'
     if USE_GPU:
         cudnn.benchmark = True
         torch.cuda.manual_seed_all(args.random_seed)
@@ -100,10 +100,12 @@ def main():
 
     # define loss function (criterion) and optimizer
     criterion = FocalLoss(device,2,gamma=args.fl_gamma)
+
     optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     # Data loading code
-    normalize = transforms.Normalize(mean=[0.14300402, 0.1434545, 0.14277956],std=[0.10050353,    0.100842826, 0.10034215])
+    normalize = transforms.Normalize(mean=[0.14300402, 0.1434545, 0.14277956],
+                                     std=[0.10050353, 0.100842826, 0.10034215])
     img_size = args.input_size
     ratio = 224.0 / float(img_size)
     train_trans = [transforms.RandomResizedCrop(img_size),
@@ -131,14 +133,14 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
         num_workers=args.workers, pin_memory=(train_sampler is None), sampler=train_sampler)
-    
+
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False,sampler=val_sampler)
+                                             num_workers=args.workers, pin_memory=False, sampler=val_sampler)
 
     if args.evaluate:
         validate(val_loader, model, criterion,args.start_epoch)
         return
-    
+
     print("[INFO] start training…")
     for epoch in range(args.start_epoch, args.epochs):
         adjust_learning_rate(optimizer, epoch)
@@ -151,9 +153,11 @@ def main():
         if is_best:
             print('epoch: {} The best is {} last best is {}'.format(epoch,prec1,best_prec1))
         best_prec1 = max(prec1, best_prec1)
+        
         if not os.path.exists(args.save_path):
             os.mkdir(args.save_path)
-        save_name = '{}/{}_{}_{}_best.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch) if is_best else'{}/{}_{}_{}.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch)
+        save_name = '{}/{}_{}_{}_{}_best.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch, prec1) if is_best else\
+            '{}/{}_{}_{}.pth.tar'.format(args.save_path, time_stp, args.model_name, epoch)
         save_checkpoint({
             'epoch': epoch + 1,
             'arch': args.arch,
@@ -161,48 +165,57 @@ def main():
             'best_prec1': best_prec1,
             'optimizer': optimizer.state_dict(),
         }, filename=save_name)
+        if is_best:
+            # save_model_dir = '{}/{}_{}_{}_{}_best.pth'.format(args.save_path, time_stp, args.model_name, epoch, prec1)
+            # torch.save(model, save_model_dir)
+
+            save_onnx_dir = '{}/{}_{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch, prec1)
+            batch_size = 1
+            input_shape = (3, 224, 224)
+            input_data_shape = torch.randn(batch_size, *input_shape)
+            torch.onnx.export(model, input_data_shape, save_onnx_dir, verbose=True)
 
 def train(train_loader, model, criterion, optimizer, epoch):
-      batch_time = AverageMeter()
-      data_time = AverageMeter()
-      losses = AverageMeter()
-      top1 = AverageMeter()
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
 
-      # switch to train mode
-      model.train()
-      end = time.time()
+    # switch to train mode
+    model.train()
 
-      for i, (input, target) in enumerate(train_loader):
-          # measure data loading time
-          data_time.update(time.time() - end)
-          input_var = Variable(input).float().to(device)
-          target_var = Variable(target).long().to(device)
+    end = time.time()
+    for i, (input, target) in enumerate(train_loader):
+        # measure data loading time
+        data_time.update(time.time() - end)
+        input_var = Variable(input).float().to(device)
+        target_var = Variable(target).long().to(device)
 
-          # compute output
-          output = model(input_var)
-          loss = criterion(output, target_var)
-          prec1,prec2 = accuracy(output.data, target_var,topk=(1,2))
+        # compute output
+        output = model(input_var)
+        loss = criterion(output, target_var)
+        prec1,prec2 = accuracy(output.data, target_var,topk=(1,2))
 
-          # measure accuracy and record loss
-          reduced_prec1 = prec1.clone()
+        # measure accuracy and record loss
+        reduced_prec1 = prec1.clone()
 
-          top1.update(reduced_prec1[0])
+        top1.update(reduced_prec1[0])
 
-          reduced_loss = loss.data.clone()
-          losses.update(reduced_loss)
+        reduced_loss = loss.data.clone()
+        losses.update(reduced_loss)
 
-          # compute gradient and do SGD step
-          optimizer.zero_grad()
-          loss.backward()
-          #  check whether the network is well connected
-          optimizer.step()
+        # compute gradient and do SGD step
+        optimizer.zero_grad()
+        loss.backward()
+        #  check whether the network is well connected
+        optimizer.step()
 
-          # measure elapsed time
-          batch_time.update(time.time() - end)
-          end = time.time()
-          lr = optimizer.param_groups[0]['lr']
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+        lr = optimizer.param_groups[0]['lr']
 
-          if i % args.print_freq == 0:
+        if i % args.print_freq == 0:
               line = 'Epoch: [{0}][{1}/{2}]\t lr:{3:.5f}\t' \
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
@@ -219,7 +232,7 @@ def validate(val_loader, model, criterion,epoch):
     # switch to evaluate mode
     model.eval()
 
-    end = time.time() 
+    end = time.time()
     with torch.no_grad():
         for i, (input, target,depth_dirs) in enumerate(val_loader):
             with torch.no_grad():
@@ -240,16 +253,21 @@ def validate(val_loader, model, criterion,epoch):
                 end = time.time()
                 if i % args.print_freq == 0:
                     line = 'Test: [{0}/{1}]\t' \
-                            'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
-                            'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
-                            'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time, loss=losses, top1=top1)
+                           'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
+                           'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
+                           'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time,
+                                    loss=losses, top1=top1)
                     print(line)
     return top1.avg
+
+
 def save_checkpoint(state, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 
@@ -265,11 +283,13 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     lr = args.lr * (0.1 ** (epoch // args.every_decay))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -345,4 +365,3 @@ class FocalLoss(nn.Module):
 if __name__ == '__main__':
     time_stp = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
     main()
- 

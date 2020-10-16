@@ -47,7 +47,7 @@ python register.py -i peoples/ -d models/fd -e embeddings/embeddings -m models/f
 参考datasets/ prepare_file_and_labels_list.sh 脚本
 文件 train/train_FeatherNet.py 需要移动到根目录执行
 ```shell
-python train_FeatherNet.py --b 32 --lr 0.01 --every-decay 60 
+python train/train_FeatherNet.py --b 32 --lr 0.01 --every-decay 60 --config train/cfgs/FeatherNetB-32-ir.yaml
 ```
 
 ```shell
