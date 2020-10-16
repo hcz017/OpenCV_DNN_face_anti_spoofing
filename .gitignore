@@ -6,6 +6,8 @@ datasets/real
 datasets/fake
 datasets/*.txt
 
+peoples
+
 out
 
 train/checkpoints/FeatherNet54/
