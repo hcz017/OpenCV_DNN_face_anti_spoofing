@@ -5,6 +5,7 @@ import time
 import yaml
 import torch
 import random
+import roc
 import numpy as np
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -154,10 +155,10 @@ def main():
         if not os.path.exists(args.save_path):
             os.mkdir(args.save_path)
         if is_best:
-            save_model_dir = '{}/{}_{}_{}_best.pth'.format(args.save_path, time_stp, args.model_name, epoch)
+            save_model_dir = '{}/{}_{}_{}_{}_best.pth'.format(args.save_path, time_stp, args.model_name, epoch, best_prec1)
             torch.save(model, save_model_dir)
 
-            save_onnx_dir = '{}/{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch)
+            # save_onnx_dir = '{}/{}_{}_{}_{}_best.onnx'.format(args.save_path, time_stp, args.model_name, epoch, best_prec1)
             # batch_size = 1
             # input_shape = (3, 224, 224)
             # input_data_shape = torch.randn(batch_size, *input_shape)
@@ -226,6 +227,10 @@ def validate(val_loader, model, criterion,epoch):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
+    result_list = []
+    label_list = []
+    predicted_list = []
+
     # switch to evaluate mode
     model.eval()
 
@@ -245,6 +250,23 @@ def validate(val_loader, model, criterion,epoch):
                 losses.update(loss.data, input.size(0))
                 top1.update(prec1[0], input.size(0))
 
+                soft_output = torch.softmax(output,dim=-1)
+                preds = soft_output.to('cpu').detach().numpy()
+                label = target.to('cpu').detach().numpy()
+                _,predicted = torch.max(soft_output.data, 1)
+                predicted = predicted.to('cpu').detach().numpy()
+
+                for i_batch in range(preds.shape[0]):
+                        result_list.append(preds[i_batch,1])
+                        label_list.append(label[i_batch])
+                        predicted_list.append(predicted[i_batch])
+                        # if args.val_save:
+                        #     f = open('submission/{}_{}_{}_submission.txt'.format(time_stp, args.arch, epoch), 'a+')
+                        #     depth_dir = depth_dirs[i_batch].replace(os.getcwd() + '/data/','')
+                        #     rgb_dir = depth_dir.replace('depth','color')
+                        #     ir_dir = depth_dir.replace('depth','ir')
+                        #     f.write(rgb_dir + ' ' + depth_dir + ' '+ir_dir+' ' + str(preds[i_batch,1]) +'\n')
+
                 # measure elapsed time
                 batch_time.update(time.time() - end)
                 end = time.time()
@@ -254,6 +276,27 @@ def validate(val_loader, model, criterion,epoch):
                             'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
                             'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(i, len(val_loader), batch_time=batch_time, loss=losses, top1=top1)
                     print(line)
+    tn, fp, fn, tp = confusion_matrix(label_list, predicted_list).ravel()
+    apcer = fp/(tn + fp)
+    npcer = fn/(fn + tp)
+    acer = (apcer + npcer)/2
+    metric =roc.cal_metric(label_list, result_list)
+    eer = metric[0]
+    tprs = metric[1]
+    auc = metric[2]
+    xy_dic = metric[3]
+#     tpr1 = tprs['TPR@FPR=10E-2']
+#     logger.info('eer: {}\t'
+#                 'tpr1: {}\t'
+#                 'auc: {}\t'
+#                 'acer: {}\t'
+#                 'accuracy: {top1.avg:.3f} ({top1.avg:.3f})'
+#           .format(eer,tpr1,auc,acer,top1=top1))
+#     pickle.dump(xy_dic, open('xys/xy_{}_{}_{}.pickle'.format(time_stp, args.arch,epoch),'wb'))
+    with open('logs/val_result_{}_{}.txt'.format(time_stp,args.arch),'a+') as f_result:
+        result_line = 'epoch: {} EER: {:.6f} TPR@FPR=10E-2: {:.6f} TPR@FPR=10E-3: {:.6f} APCER:{:.6f} NPCER:{:.6f} AUC: {:.8f} Acc:{:.3f} TN:{} FP : {} FN:{} TP:{}  ACER:{:.8f} '.format(epoch,eer, tprs["TPR@FPR=10E-2"], tprs["TPR@FPR=10E-3"],apcer,npcer,auc, top1.avg, tn, fp, fn,tp,acer)
+        f_result.write('{}\n'.format(result_line))
+    print(result_line)
     return top1.avg
 def save_checkpoint(state, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
