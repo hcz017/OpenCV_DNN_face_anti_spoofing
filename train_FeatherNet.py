@@ -49,6 +49,8 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
                 	metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', '-p', default=10, type=int,
                 	metavar='N', help='print frequency (default: 10)')
+parser.add_argument('--resume', default='', type=str, metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
 parser.add_argument('--val', '--evaluate', dest='evaluate', default=False, type=bool,
                 	help='evaluate models on validation set')
 parser.add_argument('--normalization', default=False, type=bool,
@@ -103,6 +105,22 @@ def main():
     criterion = FocalLoss(device,2,gamma=args.fl_gamma)
     optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum,
                                 weight_decay=args.weight_decay)
+
+    # optionally resume from a checkpoint
+    if args.resume:
+        print(os.getcwd())
+        if os.path.isfile(args.resume):
+            print("=> loading checkpoint '{}'".format(args.resume))
+            checkpoint = torch.load(args.resume)
+            args.start_epoch = checkpoint['epoch']
+            best_prec1 = checkpoint['best_prec1']
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args.resume, checkpoint['epoch']))
+        else:
+            print("=> no checkpoint found at '{}'".format(args.resume))
+
     # Data loading code
     normalize = transforms.Normalize(mean=[0.14300402, 0.1434545, 0.14277956],std=[0.10050353,    0.100842826, 0.10034215])
     img_size = args.input_size
