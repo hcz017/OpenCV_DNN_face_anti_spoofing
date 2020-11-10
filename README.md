@@ -1,28 +1,30 @@
-# 目录结构
-.
-├── README
-├── models 训练好的网络模型
-│   ├── fas 活体检测器
-│   ├── fd 人脸检测器
-│   └── fr 人脸身份验证器
-├── train  训练FeatherNet 的相关文件
-│   ├── cfgs FeatherNet 配置文件目录
-│   │   └── FeatherNet.yaml FeatherNet 配置文件
-│   ├── checkpoints 训练模型checkpoints 目录
-│   ├── models FeatherNet 网络架构文件目录
-│   │   └── FeatherNet.py FeatherNet 框架文件
-│   └── train_FeatherNet.py 该脚本将训练FeatherNet 分类器。我们将使用PyTorch 来搭建并训练模型。
-├── datasets 自行采集的活体检测模型训练数据集目录
-│   ├── fake 翻拍视频攻击人脸同选购
-│   └── real 帧是人脸图像
-├── peoples 用于建立人脸身份信息数据库的人物图片
-├── embeddings 保存人脸身份信息数据库的embedding(嵌入)
-├── env.yaml
-├── gather_examples.py 通过摄像头抓取人脸ROI 获取人脸深度想，帮助我们创建一个深度学习人脸活体检测网络训练数据集
-├── read_data.py 读取数据集图像用于训练
-├── register.py 该脚本用于等级人脸身份信息，建立人脸身份信息库
-├── demo.py 实时支付及人脸识别演示程序脚本
-├── requirements.txt
+资料来源《OpenCV深度学习应用与性能优化实践》第八章
+
+# 代码目录结构
+.  
+├── README  
+├── models 训练好的网络模型  
+│   ├── fas 活体检测器  
+│   ├── fd 人脸检测器  
+│   └── fr 人脸身份验证器  
+├── train  训练FeatherNet 的相关文件  
+│   ├── cfgs FeatherNet 配置文件目录  
+│   │   └── FeatherNet.yaml FeatherNet 配置文件  
+│   ├── checkpoints 训练模型checkpoints 目录  
+│   ├── models FeatherNet 网络架构文件目录  
+│   │   └── FeatherNet.py FeatherNet 框架文件  
+│   └── train_FeatherNet.py 该脚本将训练FeatherNet 分类器。我们将使用  PyTorch 来搭建并训练模型。  
+├── datasets 自行采集的活体检测模型训练数据集目录  
+│   ├── fake 翻拍视频攻击人脸同选购  
+│   └── real 帧是人脸图像  
+├── peoples 用于建立人脸身份信息数据库的人物图片  
+├── embeddings 保存人脸身份信息数据库的embedding(嵌入)  
+├── env.yaml  
+├── gather_examples.py 通过摄像头抓取人脸ROI 获取人脸深度想，帮助我们创建一个深度学习人脸活体检测网络训练数据集  
+├── read_data.py 读取数据集图像用于训练  
+├── register.py 该脚本用于等级人脸身份信息，建立人脸身份信息库  
+├── demo.py 实时支付及人脸识别演示程序脚本  
+├── requirements.txt  
 
 # 8.3.1 数据集准备
 
@@ -49,7 +51,20 @@ python register.py -i peoples/ -d models/fd -e embeddings/embeddings -m models/f
 ```shell
 python train_FeatherNet.py --b 32 --lr 0.01 --every-decay 60 
 ```
-
+# 8.3.3 支付级人脸识别系统实现
+使用书中配到资源中的活体检测模型运行：
 ```shell
 python demo.py -m models/fas/feathernetB -d models/fd -em models/fr/face-reidentification-retail-0095 -e embeddings/embeddings
+```
+
+---
+原作者除了新版本：[FeatherNets_Face-Anti-spoofing-Attack-Detection-Challenge-CVPR2019](https://github.com/SoftwareGift/FeatherNets_Face-Anti-spoofing-Attack-Detection-Challenge-CVPR2019)
+
+从新版本代码中移了部分代码过来
+- 添加 benchmark 验证数据打印
+- 添加resume checkpoint 代码
+
+恢复checkpoints 并保存benchmark 验证数据到文件：
+```shell
+python train_FeatherNet.py --resume train/checkpoints/FeatherNet54/2020-11-09-16_58_50__25_best.pth.tar --val True
 ```
